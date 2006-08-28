@@ -158,3 +158,12 @@ Contact Information
 .. _`Quick Uploader`: http://wiki.fckeditor.net/Developer%27s_Guide/Participating/Server_Side_Integration#Upload
 
 """
+
+
+try:
+    from elementtree import ElementTree
+except ImportError:
+    try:
+        import lxml.etree as ElementTree
+    except ImportError:
+        raise ImportError, "Neither elementtree.ElementTree nor lxml.etree was found. This is required by fckeditor_connector"

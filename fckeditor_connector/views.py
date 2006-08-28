@@ -1,12 +1,10 @@
 import os
 import stat
 
-from elementtree import ElementTree
+from fckeditor.connector import ElementTree
+from fckeditor.connector import settings
 
 from django.http import HttpResponse
-
-BASE_PATH = '/var/www/django-media'
-BASE_URL = '/django-media'
 
 def actual_path(base_path, file_type, path):
 
@@ -26,8 +24,6 @@ def actual_path(base_path, file_type, path):
     
 def browser(request):
 
-    global BASE_PATH
-    
     # extract the command, type and folder path
     command_name = request.REQUEST.get('Command', None)
     resource_type = request.REQUEST.get('Type', None)
@@ -50,8 +46,8 @@ def browser(request):
     else:
         # construct the response
         # append current folder information
-        abs_path =  actual_path(BASE_PATH, resource_type, folder_path)
-        abs_url  =  actual_path(BASE_URL,  resource_type, folder_path)
+        abs_path =  actual_path(settings.FCKEDITOR_CONNECTOR_ROOT, resource_type, folder_path)
+        abs_url  =  actual_path(settings.FCKEDITOR_CONNECTOR_URL,  resource_type, folder_path)
 
         xml_response.getroot().append(
             ElementTree.Element("CurrentFolder",
