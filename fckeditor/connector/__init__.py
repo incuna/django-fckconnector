@@ -75,7 +75,7 @@ Connecting the URLs
 
     ...
     
-    (r'^fckeditor_connector/', include('fckeditor_connector.urls')),
+    (r'^fckeditor_connector/', include('fckeditor.connector.urls')),
 
     ...
 
