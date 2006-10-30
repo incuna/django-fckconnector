@@ -145,6 +145,8 @@ Known Issues
  The Connector currently only implements File Browser Connector at this point.
  The `Quick Uploader`_ API will be implemented in the future.
 
+ Permission problems are not correctly reported.
+
 Contact Information
 -------------------
 

@@ -152,4 +152,44 @@ def browser(request):
     return response
 
 def uploader(request):
-    pass
+    """Quick Uploader server-side support.  Responds to a POST request
+    with the file uploaded as NewFile."""
+    
+    new_file = request.FILES.get('NewFile', None)
+    
+    if new_file is None:
+        status = "202"
+    else:
+        # determine the destination file name
+        file_name = new_file['filename']
+        base, ext = os.path.splitext(new_file['filename'])
+        count = 1
+
+        # XXX need to determine resource_type here
+        resource_type = 'uploads'
+        
+        while (os.path.exists(actual_path(settings.FCKEDITOR_CONNECTOR_ROOT,
+                                          resource_type, file_name))):
+            file_name = '%s(%s)%s' % (base, count, ext)
+            count += 1
+
+        abs_path =  actual_path(settings.FCKEDITOR_CONNECTOR_ROOT,
+                                resource_type, file_name)
+        abs_url  =  actual_path(settings.FCKEDITOR_CONNECTOR_URL,
+                                resource_type, file_name)
+
+        # write the file
+        target = file(os.path.join(abs_path, file_name), 'wb')
+        target.write(new_file['content'])
+        target.close()
+
+        # set the status
+        if file_name == new_file['filename']:
+            status = "0"
+        else:
+            status = "201, '%s'" % file_name
+
+    return HttpResponse(
+        """<script type="text/javascript">
+        window.parent.frames['frmUpload'].OnUploadCompleted(%s, '%s', '%s', '')
+        </script>""" % (status, abs_url, file_name,)
