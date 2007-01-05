@@ -6,32 +6,19 @@ from fckeditor.connector import settings
 
 from django.http import HttpResponse
 
-def actual_path(base_path, file_type, path):
+import actions
+import support
+from support import actual_path, actual_url
 
-    if path == '/':
-        path = ''
-        
-    actual = os.path.normpath('%s/%s/%s' % (base_path, file_type, path))
-
-    # make sure we start and end with a slash
-    if actual[0] != '/':
-        actual = '/' + actual
-
-    if actual[-1] != '/':
-        actual = actual + '/'
-
-    return actual
-    
 def browser(request):
 
     # extract the command, type and folder path
     command_name = request.REQUEST.get('Command', None)
-    resource_type = request.REQUEST.get('Type', None)
+    resource_type, resource_type_path = \
+                   support.get_resource_type_folder(request)
     folder_path = request.REQUEST.get('CurrentFolder', None)
 
-    #if None in (command_name, resource_type, folder_path):
-    #    return 
-
+    # set the default return values to successful completion
     err_no = 0
     err_txt = 'Successful'
     
@@ -46,8 +33,10 @@ def browser(request):
     else:
         # construct the response
         # append current folder information
-        abs_path =  actual_path(settings.FCKEDITOR_CONNECTOR_ROOT, resource_type, folder_path)
-        abs_url  =  actual_path(settings.FCKEDITOR_CONNECTOR_URL,  resource_type, folder_path)
+        abs_path =  actual_path(settings.FCKEDITOR_CONNECTOR_ROOT,
+                                resource_type_path, folder_path)
+        abs_url  =  actual_url(settings.FCKEDITOR_CONNECTOR_URL,
+                                resource_type_path, folder_path)
 
         xml_response.getroot().append(
             ElementTree.Element("CurrentFolder",
@@ -58,36 +47,11 @@ def browser(request):
 
         if (command_name == 'GetFolders'):
             # append Folder list
-            folders = ElementTree.Element("Folders")
-
-            for f in os.listdir(abs_path):
-                if os.path.isdir(f):
-                    folders.append(ElementTree.Element("Folder",
-                                                       {'name' : f}))
-
-            xml_response.getroot().append(folders)
+            actions.get_folders(xml_response, abs_path)
 
         elif (command_name == 'GetFoldersAndFiles'):
             # append Folder and list
-            folders = ElementTree.Element("Folders")
-            files = ElementTree.Element("Files")
-            
-            for f in os.listdir(abs_path):
-                if os.path.isdir(os.path.join(abs_path, f)):
-                    folders.append(ElementTree.Element("Folder",
-                                                       {'name' : f}))
-                else:
-                    size = os.lstat(os.path.join(abs_path, f))[stat.ST_SIZE]
-                    size = str(size / 1024)
-                    
-                    files.append(ElementTree.Element("File",
-                                                     {'name' : f,
-                                                      'size': size}
-                                                     )
-                                 )
-
-            xml_response.getroot().append(folders)
-            xml_response.getroot().append(files)
+            actions.get_folders_and_files(xml_response, abs_path)
 
         elif (command_name == 'CreateFolder'):
             new_folder_name = request.REQUEST.get('NewFolderName', None)
@@ -105,29 +69,12 @@ def browser(request):
             
         elif (command_name == 'FileUpload'):
 
-            new_file = request.FILES.get('NewFile', None)
-            if new_file is None:
-                status = "202"
-            else:
-                # determine the destination file name
-                file_name = new_file['filename']
-                base, ext = os.path.splitext(new_file['filename'])
-                count = 1
-                
-                while (os.path.exists(os.path.join(abs_path, file_name))):
-                    file_name = '%s(%s)%s' % (base, count, ext)
-                    count += 1
-                    
-                # write the file
-                target = file(os.path.join(abs_path, file_name), 'wb')
-                target.write(new_file['content'])
-                target.close()
+            status, filename = actions.file_upload(request, abs_path)
 
-                # set the status
-                if file_name == new_file['filename']:
-                    status = "0"
-                else:
-                    status = "201, '%s'" % file_name
+            if int(status) == 201:
+                # upload through the browser requires a conjoined
+                # status and filename if the file was renamed
+                status = "%s, '%s'" % (status, filename)
             
             return HttpResponse(
                 """<script type="text/javascript">
@@ -155,41 +102,32 @@ def uploader(request):
     """Quick Uploader server-side support.  Responds to a POST request
     with the file uploaded as NewFile."""
     
-    new_file = request.FILES.get('NewFile', None)
+    # extract the command, type and folder path
+    try:
+        resource_type, resource_type_path = \
+                       support.get_resource_type_folder(request)
+        if resource_type is None:
+            # no type specified
+            resource_type_path = ''
+
+        # determine the actual folder path
+        folder_path =  actual_path(settings.FCKEDITOR_CONNECTOR_ROOT,
+                                resource_type_path, '')
+
+        # handle the upload
+        status, filename = actions.file_upload(request, folder_path)
+
+        # calculate the resulting file URL
+        file_url  =  actual_url(settings.FCKEDITOR_CONNECTOR_URL,
+                                resource_type_path, '', filename)
+
+    except Exception, e:
+        print e
+        raise e
     
-    if new_file is None:
-        status = "202"
-    else:
-        # determine the destination file name
-        file_name = new_file['filename']
-        base, ext = os.path.splitext(new_file['filename'])
-        count = 1
-
-        # XXX need to determine resource_type here
-        resource_type = 'uploads'
-        
-        while (os.path.exists(actual_path(settings.FCKEDITOR_CONNECTOR_ROOT,
-                                          resource_type, file_name))):
-            file_name = '%s(%s)%s' % (base, count, ext)
-            count += 1
-
-        abs_path =  actual_path(settings.FCKEDITOR_CONNECTOR_ROOT,
-                                resource_type, file_name)
-        abs_url  =  actual_path(settings.FCKEDITOR_CONNECTOR_URL,
-                                resource_type, file_name)
-
-        # write the file
-        target = file(os.path.join(abs_path, file_name), 'wb')
-        target.write(new_file['content'])
-        target.close()
-
-        # set the status
-        if file_name == new_file['filename']:
-            status = "0"
-        else:
-            status = "201, '%s'" % file_name
-
+    # return an HTML response
     return HttpResponse(
         """<script type="text/javascript">
-        window.parent.frames['frmUpload'].OnUploadCompleted(%s, '%s', '%s', '')
-        </script>""" % (status, abs_url, file_name,)
+        window.parent.OnUploadCompleted(%s, '%s', '%s', '')
+        </script>""" % (status, file_url, filename,)
+        )

@@ -5,7 +5,7 @@ FCKeditor Django Connector
 ==========================
 
  :Author: Nathan R. Yergler <nathan@yergler.net>
- :Copyright: 2006
+ :Copyright: 2006-2007
  :License: GNU LGPL; see LICENSE for details.
  :Version: $Rev$
  :Updated: $Date: 2006-08-17 11:57:00 -0400 (Thu, 17 Aug 2006) $
@@ -52,8 +52,8 @@ Installing the Application
 ++++++++++++++++++++++++++
 
  To install the application, simply place the ``fckeditor_connector``
- Python package in your project directory and add ``fckeditor_connector``
- to the ``INSTALLED_APPS`` setting in ``settings.py``.
+ package on your PYTHONPATH and add ``fckeditor_connector`` to the
+ ``INSTALLED_APPS`` setting in ``settings.py``.
 
  After installing the application you need to set two configuration
  variables found in ``views.py``.  ``BASE_PATH`` defines the base
