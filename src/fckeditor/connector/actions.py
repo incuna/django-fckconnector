@@ -1,6 +1,7 @@
 import os
 import stat
 from fckeditor.connector import ElementTree
+from fckeditor.connector.settings import IGNORE_FOLDERS
 
 def get_folders(xml_response, folder_path):
     """Add information about the folders in [folder_path] to
@@ -10,7 +11,7 @@ def get_folders(xml_response, folder_path):
     folders = ElementTree.Element("Folders")
 
     for f in os.listdir(folder_path):
-        if os.path.isdir(f):
+        if os.path.isdir(os.path.join(folder_path, f)) and not f in IGNORE_FOLDERS:
             folders.append(ElementTree.Element("Folder",
                                                {'name' : f}))
 
@@ -23,8 +24,9 @@ def get_folders_and_files(xml_response, folder_path):
 
     for f in os.listdir(folder_path):
         if os.path.isdir(os.path.join(folder_path, f)):
-            folders.append(ElementTree.Element("Folder",
-                                               {'name' : f}))
+            if  not f in IGNORE_FOLDERS:
+                folders.append(ElementTree.Element("Folder",
+                                                   {'name' : f}))
         else:
             size = os.lstat(os.path.join(folder_path, f))[stat.ST_SIZE]
             size = str(size / 1024)
@@ -47,8 +49,8 @@ def file_upload(request, folder_path):
         status = "202"
     else:
         # determine the destination file name
-        file_name = new_file['filename']
-        base, ext = os.path.splitext(new_file['filename'])
+        file_name = new_file.name
+        base, ext = os.path.splitext(file_name)
         count = 1
 
         while (os.path.exists(os.path.join(folder_path, file_name))):
@@ -57,11 +59,12 @@ def file_upload(request, folder_path):
 
         # write the file
         target = file(os.path.join(folder_path, file_name), 'wb')
-        target.write(new_file['content'])
+        for chunk in new_file.chunks():
+            target.write(chunk)
         target.close()
 
         # set the status
-        if file_name == new_file['filename']:
+        if file_name == new_file.name:
             status = "0"
         else:
             status = "201"
