@@ -9,8 +9,6 @@ setup(
     package_dir = {'':'src'},
 
     # scripts and dependencies
-    install_requires = ['Django',
-                        ],
     include_package_data = True,
     namespace_packages = ['fckeditor'],
     zip_safe = True,
