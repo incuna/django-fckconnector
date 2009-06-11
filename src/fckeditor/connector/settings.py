@@ -40,3 +40,5 @@ RESOURCE_TYPE_MAP = {
     'Image' : 'uploads',
     'File' : '',
     }
+
+IGNORE_FOLDERS = []
