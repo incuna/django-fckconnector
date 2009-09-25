@@ -15,7 +15,7 @@ from django.conf import settings
 # would cause FCKeditor Connector to look in '/var/www/Media/Image' for
 # images when browsing the server.
 
-FCKEDITOR_CONNECTOR_PREFIX = ''
+FCKEDITOR_CONNECTOR_PREFIX = 'uploaded'
 
 try:
     # if using the fckeditor package
@@ -37,8 +37,10 @@ except ImportError:
 # both [FCKEDITOR_CONNECTOR_ROOT|FCKEDITOR_CONNECTOR_URL] + PREFIX
 
 RESOURCE_TYPE_MAP = {
-    'Image' : 'uploads',
+    'Image' : 'images',
+    'Flash' : 'flash',
+    'Media' : 'media',
     'File' : '',
     }
 
-IGNORE_FOLDERS = []
+IGNORE_FOLDERS = ['.svn',]
