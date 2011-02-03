@@ -5,11 +5,13 @@ from fckeditor.connector import ElementTree
 from fckeditor.connector import settings
 
 from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 import actions
 import support
 from support import actual_path, actual_url
 
+@csrf_exempt
 def browser(request):
 
     # extract the command, type and folder path
